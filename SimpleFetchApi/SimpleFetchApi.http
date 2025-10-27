@@ -1,0 +1,6 @@
+@SimpleFetchApi_HostAddress = http://localhost:5250
+
+GET {{SimpleFetchApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
