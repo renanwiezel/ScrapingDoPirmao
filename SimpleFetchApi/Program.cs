@@ -19,22 +19,47 @@ app.MapGet("/", () => Results.Redirect("/fetch-html?url=noticias.uol.com.br"));
 
 app.MapGet("/fetch", async (string url) =>
 {
-    var req = new Request();
-    var html = await req.GetHtmlAsync(Normalize(url));
-    // text/plain pra Swagger não tentar renderizar HTML
-    return Results.Text(html, "text/plain; charset=utf-8");
+    try
+    {
+        var req = new Request();
+        var html = await req.GetHtmlAsync(Normalize(url));
+        return Results.Text(html, "text/plain; charset=utf-8");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erro em /fetch: {ex.Message}");
+        return Results.Problem(detail: ex.Message, statusCode: 500);
+    }
 })
 .WithSummary("Faz GET no URL e retorna o HTML como texto")
 .Produces<string>(contentType: "text/plain");
 
-app.MapGet("/fetch-html", async (string url) =>
+app.MapGet("/fetch-html", async (string? url) =>
 {
-    var req = new Request();
-    var html = await req.GetHtmlAsync(Normalize(url));
-    // text/html pra abrir como página (fora do Swagger fica lindo)
-    return Results.Content(html, "text/html; charset=utf-8");
+    try
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return Results.BadRequest("Parâmetro 'url' é obrigatório");
+        }
+
+        var req = new Request();
+        var html = await req.GetHtmlAsync(Normalize(url));
+        return Results.Content(html, "text/html; charset=utf-8");
+    }
+    catch (HttpRequestException ex)
+    {
+        Console.WriteLine($"Erro HTTP em /fetch-html: {ex.Message}");
+        return Results.Problem(detail: $"Erro ao fazer request: {ex.Message}", statusCode: 500);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erro geral em /fetch-html: {ex.Message}\n{ex.StackTrace}");
+        return Results.Problem(detail: ex.Message, statusCode: 500);
+    }
 })
 .WithSummary("Faz GET no URL e retorna como text/html (renderizável)");
+
 
 app.Run();
 
@@ -60,8 +85,9 @@ public class Request
 
         var client = new HttpClient(handler);
 
+        client.Timeout = TimeSpan.FromSeconds(30);
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-        client.DefaultRequestHeaders.Connection.ParseAdd("keep-alive");
+        //client.DefaultRequestHeaders.Connection.ParseAdd("keep-alive");
         client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("pt-BR,pt;q=0.9");
         client.DefaultRequestHeaders.Accept.Clear();
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
