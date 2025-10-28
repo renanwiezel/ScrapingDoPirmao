@@ -15,6 +15,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.MapGet("/", () => Results.Ok(new
+{
+    status = "API funcionando",
+    endpoints = new[] {
+        "/fetch?url=noticias.uol.com.br",
+        "/fetch-html?url=noticias.uol.com.br"
+    }
+}))
+.WithSummary("Verifica se a API está online");
+
 app.MapGet("/fetch", async (string url) =>
 {
     var req = new Request();
