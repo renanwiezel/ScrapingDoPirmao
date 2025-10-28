@@ -76,21 +76,21 @@ public class Request
 {
     private static HttpClient CreateClient()
     {
-        var cookieContainer = new CookieContainer();
+        //var cookieContainer = new CookieContainer();
 
         var handler = new HttpClientHandler
         {
             // SSL verificado (melhor prática) - igual PHP
             ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
-            
+
             // Compressão automática (gzip/deflate/br) - igual PHP CURLOPT_ENCODING
-            AutomaticDecompression = DecompressionMethods.GZip | 
-                                     DecompressionMethods.Deflate | 
+            AutomaticDecompression = DecompressionMethods.GZip |
+                                     DecompressionMethods.Deflate |
                                      DecompressionMethods.Brotli,
             
             // Cookies persistentes - igual PHP CURLOPT_COOKIEJAR/COOKIEFILE
-            UseCookies = true,
-            CookieContainer = cookieContainer,
+            // UseCookies = true,
+            //CookieContainer = cookieContainer,
             
             // Segue redirecionamentos - igual PHP CURLOPT_FOLLOWLOCATION
             AllowAutoRedirect = true,
