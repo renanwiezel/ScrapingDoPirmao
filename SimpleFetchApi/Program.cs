@@ -15,7 +15,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapGet("/", () => Results.Redirect("/fetch-html?url=noticias.uol.com.br"));
+app.MapGet("/", () => Results.Redirect("/fetch?url=noticias.uol.com.br"));
 
 app.MapGet("/fetch", async (string url) =>
 {
