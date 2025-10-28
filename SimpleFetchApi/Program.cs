@@ -135,7 +135,7 @@ public class Request
         await Task.Delay(Random.Shared.Next(500, 1500));
 
         // Se for noticias.uol.com.br, acessa www.uol.com.br primeiro para pegar cookies
-        if (url.Contains("noticias.uol.com.br", StringComparison.OrdinalIgnoreCase))
+        /* if (url.Contains("noticias.uol.com.br", StringComparison.OrdinalIgnoreCase))
         {
             try
             {
@@ -148,7 +148,7 @@ public class Request
             {
                 Console.WriteLine($"Erro ao acessar www.uol.com.br: {ex.Message}");
             }
-        }
+        }*/
 
         using var resp = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
