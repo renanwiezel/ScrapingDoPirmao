@@ -80,29 +80,50 @@ public class Request
 
         var handler = new HttpClientHandler
         {
-            AutomaticDecompression = DecompressionMethods.GZip |
-                                     DecompressionMethods.Deflate |
+            // SSL verificado (melhor prática) - igual PHP
+            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+            
+            // Compressão automática (gzip/deflate/br) - igual PHP CURLOPT_ENCODING
+            AutomaticDecompression = DecompressionMethods.GZip | 
+                                     DecompressionMethods.Deflate | 
                                      DecompressionMethods.Brotli,
+            
+            // Cookies persistentes - igual PHP CURLOPT_COOKIEJAR/COOKIEFILE
             UseCookies = true,
             CookieContainer = cookieContainer,
-            AllowAutoRedirect = true
+            
+            // Segue redirecionamentos - igual PHP CURLOPT_FOLLOWLOCATION
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 5, // igual PHP CURLOPT_MAXREDIRS = 5
+            
+            // Força HTTPS - não há equivalente direto, mas configuramos abaixo
+            SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | 
+                          System.Security.Authentication.SslProtocols.Tls13
         };
 
-        var client = new HttpClient(handler);
+        var client = new HttpClient(handler)
+        {
+            // Timeout de 30 segundos - igual PHP CURLOPT_TIMEOUT = 30
+            Timeout = TimeSpan.FromSeconds(30)
+        };
 
-        client.Timeout = TimeSpan.FromSeconds(30);
-        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-        client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
+        // Forçar HTTP/2 - igual PHP CURLOPT_HTTP_VERSION = CURL_HTTP_VERSION_2TLS
+        client.DefaultRequestVersion = HttpVersion.Version20;
+        client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+
+        // User-Agent EXATO do PHP
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36");
+        
+        // Headers EXATOS do PHP
+        client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
         client.DefaultRequestHeaders.Add("Accept-Language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7");
-        client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br");
-        client.DefaultRequestHeaders.Add("DNT", "1");
         client.DefaultRequestHeaders.Add("Connection", "keep-alive");
         client.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
-        client.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "document");
-        client.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "navigate");
+        client.DefaultRequestHeaders.Add("Referer", "https://www.uol.com.br/");
         client.DefaultRequestHeaders.Add("Sec-Fetch-Site", "none");
+        client.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "navigate");
         client.DefaultRequestHeaders.Add("Sec-Fetch-User", "?1");
-        client.DefaultRequestHeaders.Add("Cache-Control", "max-age=0");
+        client.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "document");
 
         return client;
     }
@@ -120,7 +141,7 @@ public class Request
             {
                 Console.WriteLine("Detectado noticias.uol.com.br - acessando www.uol.com.br primeiro...");
                 await client.GetAsync("https://www.uol.com.br/");
-                await Task.Delay(1000); // Aguarda 1 segundo após pegar os cookies
+                await Task.Delay(1000);
                 Console.WriteLine("Cookies obtidos. Tentando acessar noticias.uol.com.br...");
             }
             catch (Exception ex)
