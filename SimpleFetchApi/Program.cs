@@ -76,17 +76,21 @@ public class Request
 {
     private static HttpClient CreateClient()
     {
+        var cookieContainer = new CookieContainer();
+
         var handler = new HttpClientHandler
         {
             AutomaticDecompression = DecompressionMethods.GZip |
                                      DecompressionMethods.Deflate |
-                                     DecompressionMethods.Brotli
+                                     DecompressionMethods.Brotli,
+            UseCookies = true,
+            CookieContainer = cookieContainer,
+            AllowAutoRedirect = true
         };
 
         var client = new HttpClient(handler);
 
         client.Timeout = TimeSpan.FromSeconds(30);
-        // Headers mais completos para simular um browser real
         client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
         client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
         client.DefaultRequestHeaders.Add("Accept-Language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7");
@@ -100,9 +104,6 @@ public class Request
         client.DefaultRequestHeaders.Add("Sec-Fetch-User", "?1");
         client.DefaultRequestHeaders.Add("Cache-Control", "max-age=0");
 
-        // Referer simulando acesso do Google (às vezes ajuda)
-        client.DefaultRequestHeaders.Add("Referer", "https://www.google.com/");
-
         return client;
     }
 
@@ -111,6 +112,22 @@ public class Request
         using var client = CreateClient();
 
         await Task.Delay(Random.Shared.Next(500, 1500));
+
+        // Se for noticias.uol.com.br, acessa www.uol.com.br primeiro para pegar cookies
+        if (url.Contains("noticias.uol.com.br", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                Console.WriteLine("Detectado noticias.uol.com.br - acessando www.uol.com.br primeiro...");
+                await client.GetAsync("https://www.uol.com.br/");
+                await Task.Delay(1000); // Aguarda 1 segundo após pegar os cookies
+                Console.WriteLine("Cookies obtidos. Tentando acessar noticias.uol.com.br...");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao acessar www.uol.com.br: {ex.Message}");
+            }
+        }
 
         using var resp = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
@@ -125,5 +142,4 @@ public class Request
 
         return await resp.Content.ReadAsStringAsync();
     }
-
 }
